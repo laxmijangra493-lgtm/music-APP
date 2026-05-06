@@ -1,0 +1,380 @@
+import streamlit as st
+import yt_dlp
+
+# ─────────────────────────────────────────────
+# PAGE CONFIG
+# ─────────────────────────────────────────────
+st.set_page_config(
+    page_title="Music Pro",
+    page_icon="🎵",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
+# ─────────────────────────────────────────────
+# SESSION STATE
+# ─────────────────────────────────────────────
+for key, default in {
+    "songs":      [],   # full growing queue
+    "index":      0,    # currently playing
+    "last_query": "",   # dedup guard
+}.items():
+    if key not in st.session_state:
+        st.session_state[key] = default
+
+# ─────────────────────────────────────────────
+# CSS  –  beige / brown theme
+# ─────────────────────────────────────────────
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Lato:wght@300;400;700&display=swap');
+
+:root {
+    --bg:        #F5EFE6;
+    --card:      #E8D9C0;
+    --card-hov:  #DFC9A8;
+    --accent:    #7B4F2E;
+    --accent2:   #A0703A;
+    --text:      #3B2410;
+    --muted:     #8C6B4A;
+    --border:    #C9A97A;
+    --active-bg: #7B4F2E;
+    --active-txt:#FDF6EC;
+    --shadow:    rgba(90,50,20,0.18);
+}
+
+html, body, [class*="css"] {
+    font-family:'Lato',sans-serif;
+    background-color:var(--bg) !important;
+    color:var(--text) !important;
+}
+.stApp {
+    background:linear-gradient(135deg,#F5EFE6 0%,#EDE0CC 60%,#DFD0B3 100%) !important;
+}
+
+/* ── Header ── */
+.mp-header {
+    text-align:center;
+    padding:1.6rem 0 1rem;
+    border-bottom:2px solid var(--border);
+    margin-bottom:1.6rem;
+}
+.mp-header h1 {
+    font-family:'Playfair Display',serif;
+    font-size:2.4rem;font-weight:700;
+    color:var(--accent);margin:0;
+}
+.mp-header p {
+    color:var(--muted);font-size:0.85rem;
+    letter-spacing:2px;text-transform:uppercase;margin:4px 0 0;
+}
+
+/* ── Search input ── */
+.stTextInput > div > div > input {
+    background:#FBF6EE !important;
+    border:1.5px solid var(--border) !important;
+    border-radius:50px !important;
+    padding:0.6rem 1.2rem !important;
+    color:var(--text) !important;
+    font-family:'Lato',sans-serif !important;
+    font-size:0.95rem !important;
+    transition:border-color .25s,box-shadow .25s;
+}
+.stTextInput > div > div > input:focus {
+    border-color:var(--accent) !important;
+    box-shadow:0 0 0 3px rgba(123,79,46,.15) !important;
+    outline:none !important;
+}
+
+/* ── Buttons ── */
+.stButton > button {
+    font-family:'Lato',sans-serif !important;
+    font-weight:700 !important;
+    border-radius:50px !important;
+    border:2px solid var(--accent) !important;
+    background:var(--accent) !important;
+    color:#FDF6EC !important;
+    padding:0.45rem 1.2rem !important;
+    font-size:0.85rem !important;
+    letter-spacing:.5px !important;
+    text-transform:uppercase !important;
+    transition:all .2s ease !important;
+    box-shadow:0 3px 10px var(--shadow) !important;
+}
+.stButton > button:hover {
+    background:var(--accent2) !important;
+    border-color:var(--accent2) !important;
+    transform:translateY(-2px) !important;
+    box-shadow:0 6px 18px var(--shadow) !important;
+}
+.stButton > button:active { transform:translateY(0) !important; }
+
+/* ── Now-playing card ── */
+.now-playing {
+    background:linear-gradient(160deg,#EDE0CC,#DFC9A8);
+    border-radius:20px;padding:1.5rem;
+    border:1.5px solid var(--border);
+    box-shadow:0 8px 32px var(--shadow);
+    text-align:center;
+}
+.now-playing img {
+    border-radius:14px;box-shadow:0 6px 20px var(--shadow);
+    width:100%;max-height:230px;object-fit:cover;
+}
+.np-title {
+    font-family:'Playfair Display',serif;
+    font-size:1.1rem;font-weight:700;color:var(--accent);
+    margin:0.9rem 0 0.2rem;line-height:1.35;
+}
+.np-channel {
+    color:var(--muted);font-size:0.78rem;
+    letter-spacing:1px;text-transform:uppercase;margin-bottom:0.8rem;
+}
+.np-counter { margin-top:0.5rem;font-size:0.78rem;color:var(--muted); }
+
+/* ── Playlist header ── */
+.playlist-header {
+    font-family:'Playfair Display',serif;
+    font-size:1.25rem;color:var(--accent);font-weight:700;
+    margin-bottom:0.8rem;padding-bottom:0.45rem;
+    border-bottom:1.5px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;
+}
+.queue-badge {
+    font-family:'Lato',sans-serif;font-size:0.72rem;
+    color:var(--muted);background:var(--card);
+    border-radius:50px;padding:2px 10px;font-weight:400;
+}
+
+/* ── Song rows ── */
+.song-row {
+    display:flex;align-items:center;gap:0.8rem;
+    padding:0.65rem 0.9rem;
+    border-radius:12px;background:var(--card);
+    margin-bottom:0.4rem;
+    border:1.5px solid transparent;
+    transition:all .2s ease;
+}
+.song-row:hover {
+    background:var(--card-hov);border-color:var(--border);
+    transform:translateX(4px);box-shadow:0 3px 10px var(--shadow);
+}
+.song-row.active {
+    background:var(--active-bg);border-color:var(--accent);
+    box-shadow:0 4px 16px var(--shadow);
+}
+.song-row.active .sr-title,
+.song-row.active .sr-ch,
+.song-row.active .sr-num { color:var(--active-txt) !important; }
+
+.sr-num   { font-size:.7rem;color:var(--muted);width:20px;flex-shrink:0;text-align:right; }
+.sr-thumb { width:42px;height:42px;border-radius:8px;object-fit:cover;flex-shrink:0; }
+.sr-info  { flex:1;overflow:hidden; }
+.sr-title {
+    font-weight:700;font-size:0.86rem;color:var(--text);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.sr-ch    { font-size:.72rem;color:var(--muted);margin-top:2px; }
+
+/* invisible overlay buttons */
+.stButton.play-btn > button {
+    position:absolute;opacity:0 !important;
+    height:56px;margin-top:-60px;
+    border-radius:12px !important;
+    cursor:pointer;pointer-events:all;
+}
+
+audio {
+    width:100%;margin-top:0.7rem;
+    accent-color:var(--accent);border-radius:50px;
+}
+.empty-state {
+    text-align:center;padding:2.5rem 1rem;color:var(--muted);
+}
+.empty-state .icon { font-size:2.8rem;margin-bottom:0.6rem; }
+.empty-state p { font-size:0.9rem; }
+
+#MainMenu,footer,header { visibility:hidden; }
+.block-container { padding-top:1rem !important; }
+</style>
+""", unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────
+# HELPERS
+# ─────────────────────────────────────────────
+@st.cache_data(show_spinner=False)
+def fetch_songs(query: str) -> list[dict]:
+    """Return top 3 YouTube audio results for a query."""
+    opts = {
+        "quiet": True,
+        "no_warnings": True,
+        "format": "bestaudio/best",
+        "noplaylist": True,
+    }
+    results = []
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        info = ydl.extract_info(f"ytsearch3:{query}", download=False)
+        for entry in (info.get("entries") or []):
+            if not entry:
+                continue
+            url = entry.get("url", "")
+            if not url:
+                for fmt in entry.get("formats", []):
+                    if fmt.get("url"):
+                        url = fmt["url"]
+                        break
+            results.append({
+                "title":     entry.get("title", "Unknown"),
+                "url":       url,
+                "thumbnail": entry.get("thumbnail", ""),
+                "channel":   entry.get("uploader", "Unknown"),
+                "duration":  entry.get("duration", 0),
+            })
+    return results
+
+
+def fmt_dur(secs):
+    if not secs:
+        return ""
+    m, s = divmod(int(secs), 60)
+    return f"{m}:{s:02d}"
+
+
+# ─────────────────────────────────────────────
+# HEADER
+# ─────────────────────────────────────────────
+st.markdown("""
+<div class="mp-header">
+    <h1>🎵 Music Pro</h1>
+    <p>Stream • Discover • Enjoy</p>
+</div>
+""", unsafe_allow_html=True)
+
+# ─────────────────────────────────────────────
+# LAYOUT
+# ─────────────────────────────────────────────
+left, right = st.columns([5, 7], gap="large")
+
+# ══ LEFT — Now Playing ═══════════════════════
+with left:
+    songs = st.session_state.songs
+    idx   = st.session_state.index
+
+    if songs:
+        song = songs[idx]
+        n    = len(songs)
+
+        st.markdown('<div class="now-playing">', unsafe_allow_html=True)
+
+        if song["thumbnail"]:
+            st.image(song["thumbnail"], use_container_width=True)
+
+        dur_str = f" · {fmt_dur(song['duration'])}" if song["duration"] else ""
+        st.markdown(f"""
+        <div class="np-title">{song['title']}</div>
+        <div class="np-channel">🎙 {song['channel']}{dur_str}</div>
+        """, unsafe_allow_html=True)
+
+        if song["url"]:
+            st.audio(song["url"])
+        else:
+            st.warning("⚠️ Stream unavailable for this track.")
+
+        pc, nc = st.columns(2)
+        with pc:
+            if st.button("⏮ Prev", key="prev"):
+                st.session_state.index = (idx - 1) % n
+                st.rerun()
+        with nc:
+            if st.button("Next ⏭", key="next"):
+                st.session_state.index = (idx + 1) % n
+                st.rerun()
+
+        st.markdown(f'<div class="np-counter">Track {idx+1} of {n}</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    else:
+        st.markdown("""
+        <div class="now-playing">
+            <div class="empty-state">
+                <div class="icon">🎶</div>
+                <p>Search a song to start listening</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+# ══ RIGHT — Search + Queue ═══════════════════
+with right:
+
+    query = st.text_input(
+        "search",
+        placeholder="Search songs, artists…",
+        label_visibility="collapsed",
+    )
+
+    sb, cb = st.columns([3, 1])
+    with sb:
+        search_clicked = st.button("🔍 Search", key="search_btn", use_container_width=True)
+    with cb:
+        if st.session_state.songs:
+            if st.button("🗑 Clear", key="clear_btn", use_container_width=True):
+                st.session_state.songs = []
+                st.session_state.index = 0
+                st.session_state.last_query = ""
+                st.rerun()
+
+    # ── Search logic: APPEND to queue, don't replace ──
+    if search_clicked and query.strip():
+        q = query.strip()
+        if q != st.session_state.last_query:
+            with st.spinner("Finding songs…"):
+                new_songs = fetch_songs(q)
+            if new_songs:
+                if not st.session_state.songs:
+                    # First search — set queue and play first
+                    st.session_state.songs = new_songs
+                    st.session_state.index = 0
+                else:
+                    # Keep playing current song, just add new ones at the end
+                    st.session_state.songs.extend(new_songs)
+                st.session_state.last_query = q
+            st.rerun()
+
+    # ── Queue list ──
+    songs = st.session_state.songs
+    badge = f'<span class="queue-badge">{len(songs)} tracks</span>' if songs else ""
+    st.markdown(f'<div class="playlist-header">📋 Queue {badge}</div>', unsafe_allow_html=True)
+
+    if not songs:
+        st.markdown("""
+        <div class="empty-state">
+            <div class="icon">🎧</div>
+            <p>Search songs — they'll queue up here</p>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        for i, s in enumerate(songs):
+            active = "active" if i == st.session_state.index else ""
+            thumb  = (
+                f'<img src="{s["thumbnail"]}" class="sr-thumb" />'
+                if s["thumbnail"] else
+                '<div class="sr-thumb" style="background:var(--border);border-radius:8px;"></div>'
+            )
+            dur_html = f" · {fmt_dur(s['duration'])}" if s["duration"] else ""
+
+            st.markdown(f"""
+            <div class="song-row {active}">
+                <span class="sr-num">{i+1}</span>
+                {thumb}
+                <div class="sr-info">
+                    <div class="sr-title">{s['title']}</div>
+                    <div class="sr-ch">{s['channel']}{dur_html}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Invisible click trigger — no button text shown
+            if st.button(" ", key=f"p{i}", use_container_width=True, help=f"▶ {s['title']}"):
+                st.session_state.index = i
+                st.rerun()
