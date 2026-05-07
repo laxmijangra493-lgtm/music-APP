@@ -5,10 +5,10 @@ import yt_dlp
 # PAGE CONFIG
 # ─────────────────────────────────────────────
 st.set_page_config(
-    page_title="Music Pro",
-    page_icon="🎵",
+    page_title="Ocean Chill",
+    page_icon="🌊",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 # ─────────────────────────────────────────────
@@ -24,397 +24,289 @@ for key, default in {
         st.session_state[key] = default
 
 # ─────────────────────────────────────────────
-# CSS  –  refined beige / brown luxury theme
+# CSS – OCEAN CHILL UI THEME
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-    --bg:          #1A110A;
-    --surface:     #231710;
-    --card:        #2C1E14;
-    --card-hov:    #38271A;
-    --accent:      #C8824A;
-    --accent2:     #E09A5C;
-    --gold:        #D4A853;
-    --gold-light:  #F0C878;
-    --text:        #F2E6D9;
-    --muted:       #9E7E65;
-    --border:      rgba(200,130,74,0.25);
-    --border-glow: rgba(200,130,74,0.55);
-    --active-bg:   linear-gradient(135deg,#7B3F1E,#A05A2C);
-    --active-txt:  #FDF0E0;
-    --shadow:      rgba(0,0,0,0.55);
-    --glow:        rgba(200,130,74,0.18);
+    color-scheme: dark;
+    --bg-main: #0A0F1A;
+    --bg-surface: #121A2F;
+    --bg-sidebar: #06090F;
+    --bg-card: #162032;
+    --bg-card-hover: #1E2A42;
+    --accent: #2D88FF;
+    --accent-hover: #4A9BFF;
+    --text-primary: #FFFFFF;
+    --text-secondary: #8B98A9;
+    --divider: rgba(255, 255, 255, 0.05);
+    --green-heart: #1ED760;
 }
 
+/* Base Styles */
 html, body, [class*="css"] {
-    font-family: 'DM Sans', sans-serif;
-    background-color: var(--bg) !important;
-    color: var(--text) !important;
+    font-family: 'Inter', sans-serif !important;
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary) !important;
 }
 
-.stApp {
-    background:
-        radial-gradient(ellipse at 20% 0%, rgba(120,60,20,0.35) 0%, transparent 55%),
-        radial-gradient(ellipse at 80% 100%, rgba(80,35,10,0.3) 0%, transparent 55%),
-        var(--bg) !important;
-    min-height: 100vh;
+/* Sidebar styling */
+[data-testid="stSidebar"] {
+    background-color: var(--bg-sidebar) !important;
+    border-right: 1px solid var(--divider) !important;
 }
 
-/* ── Noise grain overlay ── */
-.stApp::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 0;
-    opacity: 0.4;
+/* Hide standard header */
+header[data-testid="stHeader"] {
+    background: transparent !important;
+    display: none;
 }
 
-/* ── Header ── */
-.mp-header {
-    text-align: center;
-    padding: 2rem 0 1.2rem;
-    margin-bottom: 1.8rem;
-    position: relative;
+/* Main Container padding */
+.block-container {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+    max-width: 1400px;
 }
-.mp-header::after {
-    content: '';
-    display: block;
-    width: 120px;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    margin: 1rem auto 0;
-}
-.mp-header h1 {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 3rem;
+
+/* ── Typography & Headers ── */
+.greeting {
+    font-size: 2rem;
     font-weight: 700;
-    background: linear-gradient(135deg, var(--gold-light), var(--accent), var(--gold));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin: 0;
+    margin-bottom: 0.2rem;
     letter-spacing: -0.5px;
 }
-.mp-header p {
-    color: var(--muted);
-    font-size: 0.72rem;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    margin: 6px 0 0;
-    font-weight: 300;
+.sub-greeting {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 1.5rem 0 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-/* ── Search input ── */
+/* ── Search Bar ── */
 .stTextInput > div > div > input {
-    background: var(--card) !important;
-    border: 1.5px solid var(--border) !important;
-    border-radius: 50px !important;
-    padding: 0.7rem 1.4rem !important;
-    color: var(--text) !important;
-    font-family: 'DM Sans', sans-serif !important;
-    font-size: 0.93rem !important;
-    transition: border-color .3s, box-shadow .3s !important;
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    padding: 0.8rem 1.2rem !important;
+    color: var(--text-primary) !important;
+    font-size: 0.95rem !important;
+    transition: all 0.2s ease !important;
 }
 .stTextInput > div > div > input:focus {
     border-color: var(--accent) !important;
-    box-shadow: 0 0 0 3px var(--glow), 0 0 20px var(--glow) !important;
-    outline: none !important;
+    box-shadow: 0 0 0 1px var(--accent) !important;
 }
 .stTextInput > div > div > input::placeholder {
-    color: var(--muted) !important;
+    color: var(--text-secondary) !important;
 }
 
-/* ── Buttons ── */
-.stButton > button {
-    font-family: 'DM Sans', sans-serif !important;
-    font-weight: 500 !important;
-    border-radius: 50px !important;
-    border: 1.5px solid var(--accent) !important;
-    background: linear-gradient(135deg, #7B3F1E, #A05A2C) !important;
-    color: #FDF0E0 !important;
-    padding: 0.5rem 1.4rem !important;
-    font-size: 0.82rem !important;
-    letter-spacing: 1px !important;
-    text-transform: uppercase !important;
-    transition: all .25s ease !important;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4), 0 0 0 0 var(--glow) !important;
+/* ── Static Cards (Chill Vibes, etc) ── */
+.cards-container {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 2rem;
+    overflow-x: auto;
+    padding-bottom: 10px;
 }
-.stButton > button:hover {
-    background: linear-gradient(135deg, #A05A2C, #C8824A) !important;
-    border-color: var(--accent2) !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.5), 0 0 20px var(--glow) !important;
+.cards-container::-webkit-scrollbar { display: none; }
+.card {
+    min-width: 140px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 12px;
+    transition: background 0.3s;
+    cursor: pointer;
 }
-.stButton > button:active {
-    transform: translateY(0) !important;
-}
-
-/* ── Vinyl / Now-playing card ── */
-.now-playing {
-    background: linear-gradient(160deg, var(--card) 0%, #1E1208 100%);
-    border-radius: 24px;
-    padding: 1.8rem;
-    border: 1px solid var(--border);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05);
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-}
-.now-playing::before {
-    content: '';
-    position: absolute;
-    top: -60px; right: -60px;
-    width: 200px; height: 200px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(200,130,74,0.12) 0%, transparent 70%);
-    pointer-events: none;
-}
-
-/* Vinyl record wrapper */
-.vinyl-wrapper {
-    position: relative;
-    width: 180px;
-    height: 180px;
-    margin: 0 auto 1rem;
-}
-.vinyl-thumb {
-    width: 180px;
-    height: 180px;
-    border-radius: 50%;
+.card:hover { background: var(--bg-card-hover); }
+.card img {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 8px;
     object-fit: cover;
-    border: 4px solid #111;
-    box-shadow:
-        0 0 0 2px rgba(200,130,74,0.3),
-        0 0 0 18px rgba(0,0,0,0.85),
-        0 0 0 20px rgba(200,130,74,0.15),
-        0 8px 30px rgba(0,0,0,0.8);
-    animation: spin 8s linear infinite;
-    animation-play-state: paused;
+    margin-bottom: 10px;
 }
-.vinyl-thumb.playing {
-    animation-play-state: running;
-}
-.vinyl-center {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    background: radial-gradient(circle, #C8824A, #7B3F1E);
-    border: 2px solid #111;
-    box-shadow: 0 0 10px rgba(200,130,74,0.6);
-}
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
-}
+.card-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
+.card-desc { font-size: 0.75rem; color: var(--text-secondary); }
 
-/* Equalizer bars */
-.eq-bars {
-    display: flex;
-    align-items: flex-end;
-    gap: 3px;
-    height: 20px;
-    justify-content: center;
-    margin: 0.5rem auto;
-}
-.eq-bar {
-    width: 4px;
-    border-radius: 2px;
-    background: linear-gradient(to top, var(--accent), var(--gold-light));
-    animation: eq 0.8s ease-in-out infinite alternate;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-.eq-bar.active { opacity: 1; }
-.eq-bar:nth-child(1) { animation-delay: 0s;    animation-duration: 0.7s; }
-.eq-bar:nth-child(2) { animation-delay: 0.1s;  animation-duration: 0.9s; }
-.eq-bar:nth-child(3) { animation-delay: 0.2s;  animation-duration: 0.6s; }
-.eq-bar:nth-child(4) { animation-delay: 0.05s; animation-duration: 1.0s; }
-.eq-bar:nth-child(5) { animation-delay: 0.15s; animation-duration: 0.75s;}
-@keyframes eq {
-    from { height: 4px; }
-    to   { height: 20px; }
-}
-
-.np-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--text);
-    margin: 0.6rem 0 0.2rem;
-    line-height: 1.35;
-}
-.np-channel {
-    color: var(--muted);
-    font-size: 0.73rem;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    margin-bottom: 0.6rem;
-}
-.np-duration {
-    display: inline-block;
-    background: rgba(200,130,74,0.15);
-    border: 1px solid var(--border);
-    border-radius: 50px;
-    padding: 2px 12px;
-    font-size: 0.7rem;
-    color: var(--accent2);
-    letter-spacing: 1px;
-    margin-bottom: 0.8rem;
-}
-.np-counter {
-    margin-top: 0.6rem;
-    font-size: 0.72rem;
-    color: var(--muted);
-    letter-spacing: 1px;
-}
-
-/* Nav buttons row */
-.nav-row {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: center;
-    margin-top: 0.4rem;
-}
-
-/* ── Playlist header ── */
-.playlist-header {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.4rem;
-    color: var(--text);
-    font-weight: 700;
-    margin-bottom: 0.9rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-.queue-badge {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.68rem;
-    color: var(--accent2);
-    background: rgba(200,130,74,0.12);
-    border: 1px solid var(--border);
-    border-radius: 50px;
-    padding: 3px 12px;
-    font-weight: 400;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-}
-
-/* ── Song rows ── */
+/* ── Song List (Queue) ── */
 .song-row {
     display: flex;
     align-items: center;
-    gap: 0.85rem;
-    padding: 0.7rem 1rem;
-    border-radius: 14px;
-    background: var(--card);
-    margin-bottom: 0.45rem;
-    border: 1px solid transparent;
-    transition: all .25s ease;
-    position: relative;
-    overflow: hidden;
+    padding: 10px 15px;
+    border-radius: 8px;
+    transition: background 0.2s;
+    margin-bottom: 4px;
 }
-.song-row::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-    background: linear-gradient(to bottom, var(--accent), var(--gold));
-    opacity: 0;
-    transition: opacity .25s;
-    border-radius: 3px 0 0 3px;
-}
-.song-row:hover { background: var(--card-hov); border-color: var(--border); }
-.song-row:hover::before { opacity: 0.6; }
-.song-row.active {
-    background: linear-gradient(135deg, #4A2010 0%, #2C1408 100%);
-    border-color: rgba(200,130,74,0.5);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(200,130,74,0.1);
-}
-.song-row.active::before { opacity: 1; }
+.song-row:hover { background: rgba(255, 255, 255, 0.05); }
+.song-row.active { background: rgba(45, 136, 255, 0.1); }
 
-.sr-num   { font-size: .68rem; color: var(--muted); width: 22px; flex-shrink: 0; text-align: right; font-variant-numeric: tabular-nums; }
-.sr-thumb { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; flex-shrink: 0; box-shadow: 0 3px 10px rgba(0,0,0,0.4); }
-.sr-thumb-empty { width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; background: var(--surface); border: 1px solid var(--border); }
-.sr-info  { flex: 1; overflow: hidden; }
-.sr-title {
+.song-thumb {
+    width: 45px;
+    height: 45px;
+    border-radius: 6px;
+    object-fit: cover;
+    margin-right: 15px;
+}
+.song-info { flex: 1; min-width: 0; }
+.song-title {
+    font-size: 0.95rem;
     font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 3px;
+}
+.song-row.active .song-title { color: var(--accent); }
+.song-artist {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.song-duration {
     font-size: 0.85rem;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.3;
+    color: var(--text-secondary);
+    margin-right: 15px;
 }
-.sr-ch {
-    font-size: .7rem;
-    color: var(--muted);
-    margin-top: 3px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.heart-icon { color: var(--green-heart); font-size: 1rem; margin-right: 15px; }
+
+/* ── Streamlit Button Overrides for Song Rows ── */
+.stButton > button {
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-secondary) !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    font-size: 1.2rem !important;
 }
-.sr-active-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--accent2);
-    flex-shrink: 0;
-    box-shadow: 0 0 8px var(--accent);
-    animation: pulse-dot 1.5s ease-in-out infinite;
-}
-@keyframes pulse-dot {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%       { opacity: 0.5; transform: scale(0.7); }
+.stButton > button:hover {
+    color: var(--text-primary) !important;
+    background: transparent !important;
 }
 
-/* Audio player */
+/* Primary Action Buttons (Add to queue, etc) */
+.primary-btn > button {
+    background: var(--accent) !important;
+    color: white !important;
+    border-radius: 50px !important;
+    padding: 0.6rem 1.5rem !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    transition: all 0.2s !important;
+}
+.primary-btn > button:hover {
+    background: var(--accent-hover) !important;
+    transform: scale(1.02);
+}
+
+/* ── Now Playing Panel (Right) ── */
+.np-panel {
+    background: var(--bg-surface);
+    border-radius: 16px;
+    padding: 24px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.np-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+}
+.np-cover {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    object-fit: cover;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.np-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.np-title-large {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    line-height: 1.2;
+}
+.np-artist-large {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+}
+
+/* Audio Player Skin */
 audio {
     width: 100%;
-    margin-top: 0.8rem;
-    border-radius: 50px;
-    accent-color: var(--accent);
-    filter: invert(0);
+    height: 40px;
+    margin-bottom: 15px;
+    outline: none;
+    border-radius: 8px;
+}
+audio::-webkit-media-controls-panel {
+    background-color: var(--bg-card);
+}
+audio::-webkit-media-controls-current-time-display,
+audio::-webkit-media-controls-time-remaining-display {
+    color: var(--text-secondary);
 }
 
-/* Empty state */
-.empty-state {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: var(--muted);
+/* Player Controls Row */
+.player-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
 }
-.empty-state .icon {
-    font-size: 3.2rem;
-    margin-bottom: 0.8rem;
-    display: block;
-    opacity: 0.6;
+.control-btn > button {
+    background: rgba(255,255,255,0.05) !important;
+    border-radius: 50% !important;
+    width: 45px !important;
+    height: 45px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
-.empty-state p {
-    font-size: 0.88rem;
-    letter-spacing: 0.5px;
+.control-btn > button:hover { background: rgba(255,255,255,0.1) !important; }
+
+/* Lyrics Box */
+.lyrics-box {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 16px;
+    flex-grow: 1;
+    margin-top: 10px;
+}
+.lyrics-header {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+.lyrics-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
     line-height: 1.6;
 }
 
-/* Divider */
-.search-divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--border), transparent);
-    margin: 1.2rem 0;
-}
-
-#MainMenu, footer, header { visibility: hidden; }
-.block-container { padding-top: 0.5rem !important; max-width: 1200px; }
-
-/* Autoplay hidden audio trick */
-.autoplay-trigger { display: none; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -430,17 +322,14 @@ st.markdown("""
             if (audio._apAttached) return;
             audio._apAttached = true;
             audio.addEventListener('ended', () => {
-                // Find and click the hidden "Next" button
                 const btns = Array.from(document.querySelectorAll('button'));
-                const nextBtn = btns.find(b => b.innerText.trim().includes('Next') || b.dataset.key === 'next_btn');
+                // Look for Next button by standard label or custom key text
+                const nextBtn = btns.find(b => b.innerText.trim().includes('⏭') || b.dataset.key === 'next_btn');
                 if (nextBtn) nextBtn.click();
             });
         });
     }
-    // Poll until audio element appears
-    const interval = setInterval(() => {
-        attachEndedListener();
-    }, 800);
+    const interval = setInterval(attachEndedListener, 800);
     setTimeout(() => clearInterval(interval), 30000);
 })();
 </script>
@@ -452,7 +341,7 @@ st.markdown("""
 # ─────────────────────────────────────────────
 @st.cache_data(show_spinner=False)
 def fetch_song(query: str) -> dict | None:
-    """Return the single best YouTube audio result for a query."""
+    """Return the single best YouTube audio result for a query (Full Audio)."""
     opts = {
         "quiet": True,
         "no_warnings": True,
@@ -460,206 +349,254 @@ def fetch_song(query: str) -> dict | None:
         "noplaylist": True,
     }
     with yt_dlp.YoutubeDL(opts) as ydl:
-        info = ydl.extract_info(f"ytsearch1:{query}", download=False)
-        entries = info.get("entries") or []
-        if not entries:
+        try:
+            info = ydl.extract_info(f"ytsearch1:{query} audio", download=False)
+            entries = info.get("entries") or []
+            if not entries: return None
+            entry = entries[0]
+            if not entry: return None
+            
+            url = entry.get("url", "")
+            if not url:
+                for fmt in entry.get("formats", []):
+                    if fmt.get("url"):
+                        url = fmt["url"]
+                        break
+                        
+            return {
+                "title":     entry.get("title", "Unknown"),
+                "url":       url,
+                "thumbnail": entry.get("thumbnail", ""),
+                "channel":   entry.get("uploader", "Unknown Artist"),
+                "duration":  entry.get("duration", 0),
+            }
+        except Exception as e:
             return None
-        entry = entries[0]
-        if not entry:
-            return None
-        url = entry.get("url", "")
-        if not url:
-            for fmt in entry.get("formats", []):
-                if fmt.get("url"):
-                    url = fmt["url"]
-                    break
-        return {
-            "title":     entry.get("title", "Unknown"),
-            "url":       url,
-            "thumbnail": entry.get("thumbnail", ""),
-            "channel":   entry.get("uploader", "Unknown"),
-            "duration":  entry.get("duration", 0),
-        }
-
 
 def fmt_dur(secs):
-    if not secs:
-        return ""
+    if not secs: return ""
     m, s = divmod(int(secs), 60)
     return f"{m}:{s:02d}"
 
-
-def truncate(text, length=45):
+def truncate(text, length=50):
     return text if len(text) <= length else text[:length] + "…"
 
+# ─────────────────────────────────────────────
+# SIDEBAR
+# ─────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("""
+    <div style="font-size:1.4rem; font-weight:700; display:flex; align-items:center; gap:10px; margin-bottom: 2rem; color: #FFFFFF;">
+        <span style="color:var(--accent);">🌊</span> Ocean Chill
+    </div>
+    
+    <div style="display:flex; flex-direction:column; gap:15px; color:var(--text-secondary); font-size:0.95rem; font-weight:500;">
+        <div style="display:flex; align-items:center; gap:12px; color:white; background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px;"><span style="font-size:1.2rem;">🏠</span> Home</div>
+        <div style="display:flex; align-items:center; gap:12px; padding:8px 12px;"><span style="font-size:1.2rem;">🔍</span> Search</div>
+        <div style="display:flex; align-items:center; gap:12px; padding:8px 12px;"><span style="font-size:1.2rem;">📚</span> Your Library</div>
+        
+        <div style="margin-top: 15px; font-size: 0.75rem; font-weight:700; letter-spacing: 1px; color: rgba(255,255,255,0.4);">PLAYLISTS</div>
+        <div style="display:flex; align-items:center; gap:12px; padding:8px 12px;"><span style="font-size:1.2rem;">💚</span> Liked Songs</div>
+        <div style="display:flex; align-items:center; gap:12px; padding:8px 12px;"><span style="font-size:1.2rem;">🕒</span> Recently Played</div>
+    </div>
+    """, unsafe_allow_html=True)
+
 
 # ─────────────────────────────────────────────
-# HEADER
+# MAIN LAYOUT
 # ─────────────────────────────────────────────
-st.markdown("""
-<div class="mp-header">
-    <h1>♪ Music Pro</h1>
-    <p>Stream · Discover · Enjoy</p>
-</div>
-""", unsafe_allow_html=True)
+left_col, right_col = st.columns([6, 4.2], gap="large")
 
-# ─────────────────────────────────────────────
-# LAYOUT
-# ─────────────────────────────────────────────
-left, right = st.columns([5, 7], gap="large")
-
-# ══ LEFT — Now Playing ═══════════════════════
-with left:
-    songs = st.session_state.songs
-    idx   = st.session_state.index
-    n     = len(songs)
-
-    if songs and idx < n:
-        song = songs[idx]
-
-        st.markdown('<div class="now-playing">', unsafe_allow_html=True)
-
-        # Vinyl record animation
-        thumb_src = song["thumbnail"] if song["thumbnail"] else ""
-        playing_class = "playing"  # always spin when song is loaded
-
-        if thumb_src:
-            st.markdown(f"""
-            <div class="vinyl-wrapper">
-                <img src="{thumb_src}" class="vinyl-thumb {playing_class}" />
-                <div class="vinyl-center"></div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div class="vinyl-wrapper">
-                <div class="vinyl-thumb {playing_class}" style="background:var(--card);display:flex;align-items:center;justify-content:center;font-size:3rem;">🎵</div>
-                <div class="vinyl-center"></div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        # Equalizer bars
-        eq_active = "active"
-        st.markdown(f"""
-        <div class="eq-bars">
-            <div class="eq-bar {eq_active}"></div>
-            <div class="eq-bar {eq_active}"></div>
-            <div class="eq-bar {eq_active}"></div>
-            <div class="eq-bar {eq_active}"></div>
-            <div class="eq-bar {eq_active}"></div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        dur_str = fmt_dur(song['duration'])
-        st.markdown(f"""
-        <div class="np-title">{truncate(song['title'], 55)}</div>
-        <div class="np-channel">{song['channel']}</div>
-        {f'<div class="np-duration">⏱ {dur_str}</div>' if dur_str else ''}
-        """, unsafe_allow_html=True)
-
-        if song["url"]:
-            st.audio(song["url"])
-        else:
-            st.warning("⚠️ Stream unavailable for this track.")
-
-        pc, nc = st.columns(2)
-        with pc:
-            if st.button("⏮  Prev", key="prev_btn", use_container_width=True):
-                st.session_state.index = (idx - 1) % n
-                st.rerun()
-        with nc:
-            if st.button("Next  ⏭", key="next_btn", use_container_width=True):
-                st.session_state.index = (idx + 1) % n
-                st.rerun()
-
-        st.markdown(f'<div class="np-counter">♪ Track {idx+1} of {n}</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    else:
-        st.markdown("""
-        <div class="now-playing">
-            <div class="empty-state">
-                <span class="icon">🎙</span>
-                <p>Search a song to begin<br>your listening session</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-# ══ RIGHT — Search + Queue ═══════════════════
-with right:
-
+# ══ LEFT COLUMN (Main Feed) ═══════════════════
+with left_col:
+    # 1. Search Bar Area
     query = st.text_input(
-        "search",
-        placeholder="Search artists, songs, albums…",
+        "Search",
+        placeholder="Search for songs, artists, albums...",
         label_visibility="collapsed",
     )
-
-    sb, cb = st.columns([3, 1])
-    with sb:
-        search_clicked = st.button("⊕  Add to Queue", key="search_btn", use_container_width=True)
-    with cb:
+    
+    colA, colB = st.columns([3, 1])
+    with colA:
+        st.markdown('<div class="primary-btn">', unsafe_allow_html=True)
+        search_clicked = st.button("Add to Queue", key="search_btn", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with colB:
         if st.session_state.songs:
-            if st.button("✕ Clear", key="clear_btn", use_container_width=True):
+            if st.button("Clear Queue", key="clear_btn", use_container_width=True):
                 st.session_state.songs = []
                 st.session_state.index = 0
-                st.session_state.last_query = ""
                 st.rerun()
 
-    # ── Search logic: fetch 1 result, append to queue ──
+    # Search Logic
     if search_clicked and query.strip():
-        q = query.strip()
-        with st.spinner("Finding the best match…"):
-            new_song = fetch_song(q)
+        with st.spinner("Fetching full audio..."):
+            new_song = fetch_song(query.strip())
         if new_song:
             if not st.session_state.songs:
                 st.session_state.songs = [new_song]
                 st.session_state.index = 0
             else:
                 st.session_state.songs.append(new_song)
-            st.session_state.last_query = q
-            st.success(f"✓ Added: {truncate(new_song['title'], 40)}")
+            st.rerun()
         else:
             st.error("No results found. Try a different search.")
-        st.rerun()
 
-    st.markdown('<div class="search-divider"></div>', unsafe_allow_html=True)
-
-    # ── Queue list ──
-    songs = st.session_state.songs
-    badge = f'<span class="queue-badge">{len(songs)} tracks</span>' if songs else ""
-    st.markdown(f'<div class="playlist-header">Queue {badge}</div>', unsafe_allow_html=True)
-
-    if not songs:
-        st.markdown("""
-        <div class="empty-state">
-            <span class="icon">🎧</span>
-            <p>Add songs using the search above<br>They'll play in order, one by one</p>
+    # 2. Greeting & Visual Cards (Matches Screenshot UI)
+    st.markdown('<div class="greeting">Good evening, User</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-greeting">Let\'s play something calming.</div>', unsafe_allow_html=True)
+    
+    st.markdown('<div class="section-title">Made for you <span style="color:var(--text-secondary);">›</span></div>', unsafe_allow_html=True)
+    
+    # Static Cards for visual matching
+    st.markdown("""
+    <div class="cards-container">
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?auto=format&fit=crop&w=300&q=80" alt="Chill">
+            <div class="card-title">Chill Vibes</div>
+            <div class="card-desc">42 songs</div>
         </div>
-        """, unsafe_allow_html=True)
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1444465693019-aa0b63924f14?auto=format&fit=crop&w=300&q=80" alt="Focus">
+            <div class="card-title">Focus Flow</div>
+            <div class="card-desc">35 songs</div>
+        </div>
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=300&q=80" alt="Night">
+            <div class="card-title">Late Night</div>
+            <div class="card-desc">28 songs</div>
+        </div>
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=300&q=80" alt="Piano">
+            <div class="card-title">Peaceful Piano</div>
+            <div class="card-desc">19 songs</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 3. Dynamic Queue ("Recently Played" section)
+    st.markdown('<div class="section-title">Queue <span style="color:var(--text-secondary);">›</span></div>', unsafe_allow_html=True)
+    
+    songs = st.session_state.songs
+    if not songs:
+        st.markdown('<div style="color: var(--text-secondary); margin-top:10px;">Search a song above to add it to your queue.</div>', unsafe_allow_html=True)
     else:
         for i, s in enumerate(songs):
-            active = "active" if i == st.session_state.index else ""
-            active_dot = '<div class="sr-active-dot"></div>' if i == st.session_state.index else ""
-
-            if s["thumbnail"]:
-                thumb_html = f'<img src="{s["thumbnail"]}" class="sr-thumb" />'
-            else:
-                thumb_html = '<div class="sr-thumb-empty"></div>'
-
-            dur_html = f" · {fmt_dur(s['duration'])}" if s["duration"] else ""
-
-            st.markdown(f"""
-            <div class="song-row {active}">
-                <span class="sr-num">{i+1}</span>
-                {thumb_html}
-                <div class="sr-info">
-                    <div class="sr-title">{s['title']}</div>
-                    <div class="sr-ch">{s['channel']}{dur_html}</div>
+            is_active = (i == st.session_state.index)
+            active_class = "active" if is_active else ""
+            
+            # Layout using Streamlit columns for interactivity
+            c1, c2, c3, c4 = st.columns([1, 6, 2, 1])
+            
+            with c1:
+                if s["thumbnail"]:
+                    st.markdown(f'<img src="{s["thumbnail"]}" class="song-thumb" style="margin-top:2px;">', unsafe_allow_html=True)
+            
+            with c2:
+                title_color = "var(--accent)" if is_active else "var(--text-primary)"
+                st.markdown(f"""
+                <div style="display:flex; flex-direction:column; justify-content:center; height:100%;">
+                    <div style="font-weight:500; font-size:0.95rem; color:{title_color}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{s['title']}</div>
+                    <div style="font-size:0.8rem; color:var(--text-secondary);">{s['channel']}</div>
                 </div>
-                {active_dot}
-            </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
+            
+            with c3:
+                st.markdown(f"""
+                <div style="display:flex; align-items:center; height:100%; color:var(--text-secondary); font-size:0.85rem;">
+                    <span style="color:var(--green-heart); margin-right:15px; font-size:1.1rem;">♥</span> {fmt_dur(s['duration'])}
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with c4:
+                # Play button logic
+                icon = "▶"
+                if is_active: icon = "♫"
+                
+                if st.button(icon, key=f"play_{i}"):
+                    st.session_state.index = i
+                    st.rerun()
 
-            if st.button("▶", key=f"play_{i}", use_container_width=True, help=f"Play: {s['title']}"):
-                st.session_state.index = i
+# ══ RIGHT COLUMN (Now Playing) ════════════════
+with right_col:
+    st.markdown('<div class="np-panel">', unsafe_allow_html=True)
+    
+    songs = st.session_state.songs
+    idx   = st.session_state.index
+    n     = len(songs)
+
+    if songs and idx < n:
+        song = songs[idx]
+        
+        st.markdown("""
+        <div class="np-header">
+            <span style="color:var(--text-secondary);">⌄</span>
+            <span>Now Playing</span>
+            <span style="color:var(--text-secondary);">•••</span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Cover Image
+        img_url = song["thumbnail"] if song["thumbnail"] else "https://via.placeholder.com/400x400.png?text=No+Cover"
+        st.markdown(f'<img src="{img_url}" class="np-cover">', unsafe_allow_html=True)
+        
+        # Title and Artist
+        st.markdown(f"""
+        <div class="np-details">
+            <div>
+                <div class="np-title-large">{truncate(song['title'], 40)}</div>
+                <div class="np-artist-large">{song['channel']}</div>
+            </div>
+            <div style="color:var(--green-heart); font-size:1.5rem;">♥</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Native Audio Player
+        if song["url"]:
+            st.audio(song["url"])
+        
+        # Prev / Next Custom Controls
+        st.markdown('<div class="player-controls">', unsafe_allow_html=True)
+        p_col, n_col = st.columns([1, 1])
+        with p_col:
+            st.markdown('<div class="control-btn">', unsafe_allow_html=True)
+            if st.button("⏮", key="prev_btn", use_container_width=True):
+                st.session_state.index = (idx - 1) % n
                 st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+        with n_col:
+            st.markdown('<div class="control-btn">', unsafe_allow_html=True)
+            if st.button("⏭", key="next_btn", use_container_width=True):
+                st.session_state.index = (idx + 1) % n
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Mock Lyrics Section
+        st.markdown("""
+        <div class="lyrics-box">
+            <div class="lyrics-header">Lyrics</div>
+            <div class="lyrics-text">
+                ♪<br>
+                Playing from YouTube Audio Stream<br>
+                High Quality Fetching via yt-dlp...<br>
+                <br>
+                (Enjoy the uninterrupted track)
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    else:
+        # Empty State for Right Panel
+        st.markdown("""
+        <div class="np-header">
+            <span>Now Playing</span>
+        </div>
+        <div style="flex-grow:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--text-secondary); text-align:center;">
+            <div style="font-size:4rem; margin-bottom:20px; opacity:0.5;">🎧</div>
+            <h4>No track selected</h4>
+            <p style="font-size:0.9rem;">Add a song to the queue to start listening.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
