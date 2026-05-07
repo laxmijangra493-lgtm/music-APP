@@ -15,188 +15,435 @@ st.set_page_config(
 # SESSION STATE
 # ─────────────────────────────────────────────
 for key, default in {
-    "songs":      [],   # full growing queue
-    "index":      0,    # currently playing
-    "last_query": "",   # dedup guard
+    "songs":      [],
+    "index":      0,
+    "last_query": "",
+    "is_playing": False,
 }.items():
     if key not in st.session_state:
         st.session_state[key] = default
 
 # ─────────────────────────────────────────────
-# CSS  –  beige / brown theme
+# CSS  –  refined beige / brown luxury theme
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Lato:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;700&display=swap');
 
 :root {
-    --bg:        #F5EFE6;
-    --card:      #E8D9C0;
-    --card-hov:  #DFC9A8;
-    --accent:    #7B4F2E;
-    --accent2:   #A0703A;
-    --text:      #3B2410;
-    --muted:     #8C6B4A;
-    --border:    #C9A97A;
-    --active-bg: #7B4F2E;
-    --active-txt:#FDF6EC;
-    --shadow:    rgba(90,50,20,0.18);
+    --bg:          #1A110A;
+    --surface:     #231710;
+    --card:        #2C1E14;
+    --card-hov:    #38271A;
+    --accent:      #C8824A;
+    --accent2:     #E09A5C;
+    --gold:        #D4A853;
+    --gold-light:  #F0C878;
+    --text:        #F2E6D9;
+    --muted:       #9E7E65;
+    --border:      rgba(200,130,74,0.25);
+    --border-glow: rgba(200,130,74,0.55);
+    --active-bg:   linear-gradient(135deg,#7B3F1E,#A05A2C);
+    --active-txt:  #FDF0E0;
+    --shadow:      rgba(0,0,0,0.55);
+    --glow:        rgba(200,130,74,0.18);
 }
 
 html, body, [class*="css"] {
-    font-family:'Lato',sans-serif;
-    background-color:var(--bg) !important;
-    color:var(--text) !important;
+    font-family: 'DM Sans', sans-serif;
+    background-color: var(--bg) !important;
+    color: var(--text) !important;
 }
+
 .stApp {
-    background:linear-gradient(135deg,#F5EFE6 0%,#EDE0CC 60%,#DFD0B3 100%) !important;
+    background:
+        radial-gradient(ellipse at 20% 0%, rgba(120,60,20,0.35) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 100%, rgba(80,35,10,0.3) 0%, transparent 55%),
+        var(--bg) !important;
+    min-height: 100vh;
+}
+
+/* ── Noise grain overlay ── */
+.stApp::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
 }
 
 /* ── Header ── */
 .mp-header {
-    text-align:center;
-    padding:1.6rem 0 1rem;
-    border-bottom:2px solid var(--border);
-    margin-bottom:1.6rem;
+    text-align: center;
+    padding: 2rem 0 1.2rem;
+    margin-bottom: 1.8rem;
+    position: relative;
+}
+.mp-header::after {
+    content: '';
+    display: block;
+    width: 120px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    margin: 1rem auto 0;
 }
 .mp-header h1 {
-    font-family:'Playfair Display',serif;
-    font-size:2.4rem;font-weight:700;
-    color:var(--accent);margin:0;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 3rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--gold-light), var(--accent), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+    letter-spacing: -0.5px;
 }
 .mp-header p {
-    color:var(--muted);font-size:0.85rem;
-    letter-spacing:2px;text-transform:uppercase;margin:4px 0 0;
+    color: var(--muted);
+    font-size: 0.72rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin: 6px 0 0;
+    font-weight: 300;
 }
 
 /* ── Search input ── */
 .stTextInput > div > div > input {
-    background:#FBF6EE !important;
-    border:1.5px solid var(--border) !important;
-    border-radius:50px !important;
-    padding:0.6rem 1.2rem !important;
-    color:var(--text) !important;
-    font-family:'Lato',sans-serif !important;
-    font-size:0.95rem !important;
-    transition:border-color .25s,box-shadow .25s;
+    background: var(--card) !important;
+    border: 1.5px solid var(--border) !important;
+    border-radius: 50px !important;
+    padding: 0.7rem 1.4rem !important;
+    color: var(--text) !important;
+    font-family: 'DM Sans', sans-serif !important;
+    font-size: 0.93rem !important;
+    transition: border-color .3s, box-shadow .3s !important;
 }
 .stTextInput > div > div > input:focus {
-    border-color:var(--accent) !important;
-    box-shadow:0 0 0 3px rgba(123,79,46,.15) !important;
-    outline:none !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px var(--glow), 0 0 20px var(--glow) !important;
+    outline: none !important;
+}
+.stTextInput > div > div > input::placeholder {
+    color: var(--muted) !important;
 }
 
 /* ── Buttons ── */
 .stButton > button {
-    font-family:'Lato',sans-serif !important;
-    font-weight:700 !important;
-    border-radius:50px !important;
-    border:2px solid var(--accent) !important;
-    background:var(--accent) !important;
-    color:#FDF6EC !important;
-    padding:0.45rem 1.2rem !important;
-    font-size:0.85rem !important;
-    letter-spacing:.5px !important;
-    text-transform:uppercase !important;
-    transition:all .2s ease !important;
-    box-shadow:0 3px 10px var(--shadow) !important;
+    font-family: 'DM Sans', sans-serif !important;
+    font-weight: 500 !important;
+    border-radius: 50px !important;
+    border: 1.5px solid var(--accent) !important;
+    background: linear-gradient(135deg, #7B3F1E, #A05A2C) !important;
+    color: #FDF0E0 !important;
+    padding: 0.5rem 1.4rem !important;
+    font-size: 0.82rem !important;
+    letter-spacing: 1px !important;
+    text-transform: uppercase !important;
+    transition: all .25s ease !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4), 0 0 0 0 var(--glow) !important;
 }
 .stButton > button:hover {
-    background:var(--accent2) !important;
-    border-color:var(--accent2) !important;
-    transform:translateY(-2px) !important;
-    box-shadow:0 6px 18px var(--shadow) !important;
+    background: linear-gradient(135deg, #A05A2C, #C8824A) !important;
+    border-color: var(--accent2) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.5), 0 0 20px var(--glow) !important;
 }
-.stButton > button:active { transform:translateY(0) !important; }
+.stButton > button:active {
+    transform: translateY(0) !important;
+}
 
-/* ── Now-playing card ── */
+/* ── Vinyl / Now-playing card ── */
 .now-playing {
-    background:linear-gradient(160deg,#EDE0CC,#DFC9A8);
-    border-radius:20px;padding:1.5rem;
-    border:1.5px solid var(--border);
-    box-shadow:0 8px 32px var(--shadow);
-    text-align:center;
+    background: linear-gradient(160deg, var(--card) 0%, #1E1208 100%);
+    border-radius: 24px;
+    padding: 1.8rem;
+    border: 1px solid var(--border);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
 }
-.now-playing img {
-    border-radius:14px;box-shadow:0 6px 20px var(--shadow);
-    width:100%;max-height:230px;object-fit:cover;
+.now-playing::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(200,130,74,0.12) 0%, transparent 70%);
+    pointer-events: none;
 }
+
+/* Vinyl record wrapper */
+.vinyl-wrapper {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    margin: 0 auto 1rem;
+}
+.vinyl-thumb {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #111;
+    box-shadow:
+        0 0 0 2px rgba(200,130,74,0.3),
+        0 0 0 18px rgba(0,0,0,0.85),
+        0 0 0 20px rgba(200,130,74,0.15),
+        0 8px 30px rgba(0,0,0,0.8);
+    animation: spin 8s linear infinite;
+    animation-play-state: paused;
+}
+.vinyl-thumb.playing {
+    animation-play-state: running;
+}
+.vinyl-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #C8824A, #7B3F1E);
+    border: 2px solid #111;
+    box-shadow: 0 0 10px rgba(200,130,74,0.6);
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+/* Equalizer bars */
+.eq-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 20px;
+    justify-content: center;
+    margin: 0.5rem auto;
+}
+.eq-bar {
+    width: 4px;
+    border-radius: 2px;
+    background: linear-gradient(to top, var(--accent), var(--gold-light));
+    animation: eq 0.8s ease-in-out infinite alternate;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.eq-bar.active { opacity: 1; }
+.eq-bar:nth-child(1) { animation-delay: 0s;    animation-duration: 0.7s; }
+.eq-bar:nth-child(2) { animation-delay: 0.1s;  animation-duration: 0.9s; }
+.eq-bar:nth-child(3) { animation-delay: 0.2s;  animation-duration: 0.6s; }
+.eq-bar:nth-child(4) { animation-delay: 0.05s; animation-duration: 1.0s; }
+.eq-bar:nth-child(5) { animation-delay: 0.15s; animation-duration: 0.75s;}
+@keyframes eq {
+    from { height: 4px; }
+    to   { height: 20px; }
+}
+
 .np-title {
-    font-family:'Playfair Display',serif;
-    font-size:1.1rem;font-weight:700;color:var(--accent);
-    margin:0.9rem 0 0.2rem;line-height:1.35;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0.6rem 0 0.2rem;
+    line-height: 1.35;
 }
 .np-channel {
-    color:var(--muted);font-size:0.78rem;
-    letter-spacing:1px;text-transform:uppercase;margin-bottom:0.8rem;
+    color: var(--muted);
+    font-size: 0.73rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
 }
-.np-counter { margin-top:0.5rem;font-size:0.78rem;color:var(--muted); }
+.np-duration {
+    display: inline-block;
+    background: rgba(200,130,74,0.15);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 2px 12px;
+    font-size: 0.7rem;
+    color: var(--accent2);
+    letter-spacing: 1px;
+    margin-bottom: 0.8rem;
+}
+.np-counter {
+    margin-top: 0.6rem;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+}
+
+/* Nav buttons row */
+.nav-row {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 0.4rem;
+}
 
 /* ── Playlist header ── */
 .playlist-header {
-    font-family:'Playfair Display',serif;
-    font-size:1.25rem;color:var(--accent);font-weight:700;
-    margin-bottom:0.8rem;padding-bottom:0.45rem;
-    border-bottom:1.5px solid var(--border);
-    display:flex;align-items:center;justify-content:space-between;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    color: var(--text);
+    font-weight: 700;
+    margin-bottom: 0.9rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 .queue-badge {
-    font-family:'Lato',sans-serif;font-size:0.72rem;
-    color:var(--muted);background:var(--card);
-    border-radius:50px;padding:2px 10px;font-weight:400;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.68rem;
+    color: var(--accent2);
+    background: rgba(200,130,74,0.12);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 3px 12px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 /* ── Song rows ── */
 .song-row {
-    display:flex;align-items:center;gap:0.8rem;
-    padding:0.65rem 0.9rem;
-    border-radius:12px;background:var(--card);
-    margin-bottom:0.4rem;
-    border:1.5px solid transparent;
-    transition:all .2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.7rem 1rem;
+    border-radius: 14px;
+    background: var(--card);
+    margin-bottom: 0.45rem;
+    border: 1px solid transparent;
+    transition: all .25s ease;
+    position: relative;
+    overflow: hidden;
 }
-.song-row:hover {
-    background:var(--card-hov);border-color:var(--border);
-    transform:translateX(4px);box-shadow:0 3px 10px var(--shadow);
+.song-row::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--accent), var(--gold));
+    opacity: 0;
+    transition: opacity .25s;
+    border-radius: 3px 0 0 3px;
 }
+.song-row:hover { background: var(--card-hov); border-color: var(--border); }
+.song-row:hover::before { opacity: 0.6; }
 .song-row.active {
-    background:var(--active-bg);border-color:var(--accent);
-    box-shadow:0 4px 16px var(--shadow);
+    background: linear-gradient(135deg, #4A2010 0%, #2C1408 100%);
+    border-color: rgba(200,130,74,0.5);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(200,130,74,0.1);
 }
-.song-row.active .sr-title,
-.song-row.active .sr-ch,
-.song-row.active .sr-num { color:var(--active-txt) !important; }
+.song-row.active::before { opacity: 1; }
 
-.sr-num   { font-size:.7rem;color:var(--muted);width:20px;flex-shrink:0;text-align:right; }
-.sr-thumb { width:42px;height:42px;border-radius:8px;object-fit:cover;flex-shrink:0; }
-.sr-info  { flex:1;overflow:hidden; }
+.sr-num   { font-size: .68rem; color: var(--muted); width: 22px; flex-shrink: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.sr-thumb { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; flex-shrink: 0; box-shadow: 0 3px 10px rgba(0,0,0,0.4); }
+.sr-thumb-empty { width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; background: var(--surface); border: 1px solid var(--border); }
+.sr-info  { flex: 1; overflow: hidden; }
 .sr-title {
-    font-weight:700;font-size:0.86rem;color:var(--text);
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
 }
-.sr-ch    { font-size:.72rem;color:var(--muted);margin-top:2px; }
-
-/* invisible overlay buttons */
-.stButton.play-btn > button {
-    position:absolute;opacity:0 !important;
-    height:56px;margin-top:-60px;
-    border-radius:12px !important;
-    cursor:pointer;pointer-events:all;
+.sr-ch {
+    font-size: .7rem;
+    color: var(--muted);
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.sr-active-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent2);
+    flex-shrink: 0;
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse-dot 1.5s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.5; transform: scale(0.7); }
 }
 
+/* Audio player */
 audio {
-    width:100%;margin-top:0.7rem;
-    accent-color:var(--accent);border-radius:50px;
+    width: 100%;
+    margin-top: 0.8rem;
+    border-radius: 50px;
+    accent-color: var(--accent);
+    filter: invert(0);
 }
-.empty-state {
-    text-align:center;padding:2.5rem 1rem;color:var(--muted);
-}
-.empty-state .icon { font-size:2.8rem;margin-bottom:0.6rem; }
-.empty-state p { font-size:0.9rem; }
 
-#MainMenu,footer,header { visibility:hidden; }
-.block-container { padding-top:1rem !important; }
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+}
+.empty-state .icon {
+    font-size: 3.2rem;
+    margin-bottom: 0.8rem;
+    display: block;
+    opacity: 0.6;
+}
+.empty-state p {
+    font-size: 0.88rem;
+    letter-spacing: 0.5px;
+    line-height: 1.6;
+}
+
+/* Divider */
+.search-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 1.2rem 0;
+}
+
+#MainMenu, footer, header { visibility: hidden; }
+.block-container { padding-top: 0.5rem !important; max-width: 1200px; }
+
+/* Autoplay hidden audio trick */
+.autoplay-trigger { display: none; }
 </style>
+""", unsafe_allow_html=True)
+
+# ─────────────────────────────────────────────
+# AUTOPLAY JS — detects song end, clicks Next
+# ─────────────────────────────────────────────
+st.markdown("""
+<script>
+(function setupAutoplay() {
+    function attachEndedListener() {
+        const audios = document.querySelectorAll('audio');
+        audios.forEach(audio => {
+            if (audio._apAttached) return;
+            audio._apAttached = true;
+            audio.addEventListener('ended', () => {
+                // Find and click the hidden "Next" button
+                const btns = Array.from(document.querySelectorAll('button'));
+                const nextBtn = btns.find(b => b.innerText.trim().includes('Next') || b.dataset.key === 'next_btn');
+                if (nextBtn) nextBtn.click();
+            });
+        });
+    }
+    // Poll until audio element appears
+    const interval = setInterval(() => {
+        attachEndedListener();
+    }, 800);
+    setTimeout(() => clearInterval(interval), 30000);
+})();
+</script>
 """, unsafe_allow_html=True)
 
 
@@ -204,34 +451,35 @@ audio {
 # HELPERS
 # ─────────────────────────────────────────────
 @st.cache_data(show_spinner=False)
-def fetch_songs(query: str) -> list[dict]:
-    """Return top 3 YouTube audio results for a query."""
+def fetch_song(query: str) -> dict | None:
+    """Return the single best YouTube audio result for a query."""
     opts = {
         "quiet": True,
         "no_warnings": True,
         "format": "bestaudio/best",
         "noplaylist": True,
     }
-    results = []
     with yt_dlp.YoutubeDL(opts) as ydl:
-        info = ydl.extract_info(f"ytsearch3:{query}", download=False)
-        for entry in (info.get("entries") or []):
-            if not entry:
-                continue
-            url = entry.get("url", "")
-            if not url:
-                for fmt in entry.get("formats", []):
-                    if fmt.get("url"):
-                        url = fmt["url"]
-                        break
-            results.append({
-                "title":     entry.get("title", "Unknown"),
-                "url":       url,
-                "thumbnail": entry.get("thumbnail", ""),
-                "channel":   entry.get("uploader", "Unknown"),
-                "duration":  entry.get("duration", 0),
-            })
-    return results
+        info = ydl.extract_info(f"ytsearch1:{query}", download=False)
+        entries = info.get("entries") or []
+        if not entries:
+            return None
+        entry = entries[0]
+        if not entry:
+            return None
+        url = entry.get("url", "")
+        if not url:
+            for fmt in entry.get("formats", []):
+                if fmt.get("url"):
+                    url = fmt["url"]
+                    break
+        return {
+            "title":     entry.get("title", "Unknown"),
+            "url":       url,
+            "thumbnail": entry.get("thumbnail", ""),
+            "channel":   entry.get("uploader", "Unknown"),
+            "duration":  entry.get("duration", 0),
+        }
 
 
 def fmt_dur(secs):
@@ -241,13 +489,17 @@ def fmt_dur(secs):
     return f"{m}:{s:02d}"
 
 
+def truncate(text, length=45):
+    return text if len(text) <= length else text[:length] + "…"
+
+
 # ─────────────────────────────────────────────
 # HEADER
 # ─────────────────────────────────────────────
 st.markdown("""
 <div class="mp-header">
-    <h1>🎵 Music Pro</h1>
-    <p>Stream • Discover • Enjoy</p>
+    <h1>♪ Music Pro</h1>
+    <p>Stream · Discover · Enjoy</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -260,20 +512,49 @@ left, right = st.columns([5, 7], gap="large")
 with left:
     songs = st.session_state.songs
     idx   = st.session_state.index
+    n     = len(songs)
 
-    if songs:
+    if songs and idx < n:
         song = songs[idx]
-        n    = len(songs)
 
         st.markdown('<div class="now-playing">', unsafe_allow_html=True)
 
-        if song["thumbnail"]:
-            st.image(song["thumbnail"], use_container_width=True)
+        # Vinyl record animation
+        thumb_src = song["thumbnail"] if song["thumbnail"] else ""
+        playing_class = "playing"  # always spin when song is loaded
 
-        dur_str = f" · {fmt_dur(song['duration'])}" if song["duration"] else ""
+        if thumb_src:
+            st.markdown(f"""
+            <div class="vinyl-wrapper">
+                <img src="{thumb_src}" class="vinyl-thumb {playing_class}" />
+                <div class="vinyl-center"></div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+            <div class="vinyl-wrapper">
+                <div class="vinyl-thumb {playing_class}" style="background:var(--card);display:flex;align-items:center;justify-content:center;font-size:3rem;">🎵</div>
+                <div class="vinyl-center"></div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Equalizer bars
+        eq_active = "active"
         st.markdown(f"""
-        <div class="np-title">{song['title']}</div>
-        <div class="np-channel">🎙 {song['channel']}{dur_str}</div>
+        <div class="eq-bars">
+            <div class="eq-bar {eq_active}"></div>
+            <div class="eq-bar {eq_active}"></div>
+            <div class="eq-bar {eq_active}"></div>
+            <div class="eq-bar {eq_active}"></div>
+            <div class="eq-bar {eq_active}"></div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        dur_str = fmt_dur(song['duration'])
+        st.markdown(f"""
+        <div class="np-title">{truncate(song['title'], 55)}</div>
+        <div class="np-channel">{song['channel']}</div>
+        {f'<div class="np-duration">⏱ {dur_str}</div>' if dur_str else ''}
         """, unsafe_allow_html=True)
 
         if song["url"]:
@@ -283,23 +564,23 @@ with left:
 
         pc, nc = st.columns(2)
         with pc:
-            if st.button("⏮ Prev", key="prev"):
+            if st.button("⏮  Prev", key="prev_btn", use_container_width=True):
                 st.session_state.index = (idx - 1) % n
                 st.rerun()
         with nc:
-            if st.button("Next ⏭", key="next"):
+            if st.button("Next  ⏭", key="next_btn", use_container_width=True):
                 st.session_state.index = (idx + 1) % n
                 st.rerun()
 
-        st.markdown(f'<div class="np-counter">Track {idx+1} of {n}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="np-counter">♪ Track {idx+1} of {n}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     else:
         st.markdown("""
         <div class="now-playing">
             <div class="empty-state">
-                <div class="icon">🎶</div>
-                <p>Search a song to start listening</p>
+                <span class="icon">🎙</span>
+                <p>Search a song to begin<br>your listening session</p>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -309,72 +590,76 @@ with right:
 
     query = st.text_input(
         "search",
-        placeholder="Search songs, artists…",
+        placeholder="Search artists, songs, albums…",
         label_visibility="collapsed",
     )
 
     sb, cb = st.columns([3, 1])
     with sb:
-        search_clicked = st.button("🔍 Search", key="search_btn", use_container_width=True)
+        search_clicked = st.button("⊕  Add to Queue", key="search_btn", use_container_width=True)
     with cb:
         if st.session_state.songs:
-            if st.button("🗑 Clear", key="clear_btn", use_container_width=True):
+            if st.button("✕ Clear", key="clear_btn", use_container_width=True):
                 st.session_state.songs = []
                 st.session_state.index = 0
                 st.session_state.last_query = ""
                 st.rerun()
 
-    # ── Search logic: APPEND to queue, don't replace ──
+    # ── Search logic: fetch 1 result, append to queue ──
     if search_clicked and query.strip():
         q = query.strip()
-        if q != st.session_state.last_query:
-            with st.spinner("Finding songs…"):
-                new_songs = fetch_songs(q)
-            if new_songs:
-                if not st.session_state.songs:
-                    # First search — set queue and play first
-                    st.session_state.songs = new_songs
-                    st.session_state.index = 0
-                else:
-                    # Keep playing current song, just add new ones at the end
-                    st.session_state.songs.extend(new_songs)
-                st.session_state.last_query = q
-            st.rerun()
+        with st.spinner("Finding the best match…"):
+            new_song = fetch_song(q)
+        if new_song:
+            if not st.session_state.songs:
+                st.session_state.songs = [new_song]
+                st.session_state.index = 0
+            else:
+                st.session_state.songs.append(new_song)
+            st.session_state.last_query = q
+            st.success(f"✓ Added: {truncate(new_song['title'], 40)}")
+        else:
+            st.error("No results found. Try a different search.")
+        st.rerun()
+
+    st.markdown('<div class="search-divider"></div>', unsafe_allow_html=True)
 
     # ── Queue list ──
     songs = st.session_state.songs
     badge = f'<span class="queue-badge">{len(songs)} tracks</span>' if songs else ""
-    st.markdown(f'<div class="playlist-header">📋 Queue {badge}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="playlist-header">Queue {badge}</div>', unsafe_allow_html=True)
 
     if not songs:
         st.markdown("""
         <div class="empty-state">
-            <div class="icon">🎧</div>
-            <p>Search songs — they'll queue up here</p>
+            <span class="icon">🎧</span>
+            <p>Add songs using the search above<br>They'll play in order, one by one</p>
         </div>
         """, unsafe_allow_html=True)
     else:
         for i, s in enumerate(songs):
             active = "active" if i == st.session_state.index else ""
-            thumb  = (
-                f'<img src="{s["thumbnail"]}" class="sr-thumb" />'
-                if s["thumbnail"] else
-                '<div class="sr-thumb" style="background:var(--border);border-radius:8px;"></div>'
-            )
+            active_dot = '<div class="sr-active-dot"></div>' if i == st.session_state.index else ""
+
+            if s["thumbnail"]:
+                thumb_html = f'<img src="{s["thumbnail"]}" class="sr-thumb" />'
+            else:
+                thumb_html = '<div class="sr-thumb-empty"></div>'
+
             dur_html = f" · {fmt_dur(s['duration'])}" if s["duration"] else ""
 
             st.markdown(f"""
             <div class="song-row {active}">
                 <span class="sr-num">{i+1}</span>
-                {thumb}
+                {thumb_html}
                 <div class="sr-info">
                     <div class="sr-title">{s['title']}</div>
                     <div class="sr-ch">{s['channel']}{dur_html}</div>
                 </div>
+                {active_dot}
             </div>
             """, unsafe_allow_html=True)
 
-            # Invisible click trigger — no button text shown
-            if st.button(" ", key=f"p{i}", use_container_width=True, help=f"▶ {s['title']}"):
+            if st.button("▶", key=f"play_{i}", use_container_width=True, help=f"Play: {s['title']}"):
                 st.session_state.index = i
                 st.rerun()
